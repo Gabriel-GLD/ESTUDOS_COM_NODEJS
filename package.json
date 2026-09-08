@@ -1,0 +1,23 @@
+{
+  "name": "curso_Node",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "date-fns": "^4.4.0",
+    "express": "^5.2.1",
+    "sequelize": "^6.37.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "nodemon": "^3.1.14",
+    "sequelize-cli": "^6.6.5",
+    "type": "module"
+  },
+  "scripts": {
+    "start": "node-wath",
+    "dev": "nodemon ./src/server.js"
+  }
+}
