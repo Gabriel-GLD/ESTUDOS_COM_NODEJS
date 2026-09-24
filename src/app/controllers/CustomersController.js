@@ -1,4 +1,7 @@
+import { ConnectionAcquireTimeoutError } from "sequelize";
 import Customer from "../models/Customer";
+import { parseISO } from "date-fns";
+import Contact from "../models/Contact"
 
 let customers = [
     { id: 1, name: "Gabriel Lucas", site: "http://gabri.com.br" },
@@ -7,16 +10,15 @@ let customers = [
 ];
 class CustomersController {
     // Listagem dos Customers
-    async index (req, res) {
-
+    async index(req, res) {
         const {
             name,
             email,
             status,
             createdBefore,
             updatedBefore,
-            updateAfter,
-            sort.
+            updatedAfter,
+            sort,
         } = req.query;
 
         const page = req.query.page || 1;
@@ -26,72 +28,116 @@ class CustomersController {
         // 250 registros (10 paginas)
         // pg (25 - 50)
 
-        let where = {}
+        let where = {};
+        let order = [];
 
-        if(name) {
+        if (name) {
             where = {
                 ...where,
                 name: {
                     [Op.iLike]: name,
                 },
-            }
+            };
         }
 
-        if(email) {
+        if (email) {
             where = {
                 ...where,
                 email: {
                     [Op.iLike]: email,
                 },
-            }
+            };
         }
-
 
         //[Op.in]: ["ACTIVE, "ARCHIVED"],
         //localhost: 3000/customers?status=active,archived
         // status = active,archived => ["active, archived"]
 
-
-        if(status) {
+        if (status) {
             where = {
                 ...where,
                 status: {
-                    [Op.in]: status.split(",").map(item => item.toUpperCase()),
+                    [Op.in]: status
+                        .split(",")
+                        .map((item) => item.toUpperCase()),
                 },
-            }
+            };
         }
 
-        if(createdBefore) {
+        if (createdBefore) {
             where = {
                 ...where,
                 createdAt: {
-                    [Op.gte]: createdBefore,
+                    [Op.gte]: parseISO(createdBefore),
                 },
-            }
+            };
+        }
+
+        if (createdAfter) {
+            where = {
+                ...where,
+                createdAt: {
+                    [Op.lte]: parseISO(createdAfter),
+                },
+            };
+        }
+
+        if (updatedBefore) {
+            where = {
+                ...where,
+                updatedAt: {
+                    [Op.gte]: parseISO(updatedBefore),
+                },
+            };
+        }
+
+        if (updatedAfter) {
+            where = {
+                ...where,
+                updatedAt: {
+                    [Op.lte]: parseISO(updatedAfter),
+                },
+            };
+        }
+
+        // localhost:3000?sort=id:desc,name
+        if(sort) {
+            order = sort.split(",").map(item => item.split(":"))
         }
 
 
         const data = await Customer.findAll({
-            limite: 1000
+            where,
+            // include: [
+            //     {
+            //         model: Contact,
+            //         attributes: ["id, "status"],
+            //     }
+            // ]
+            order,
+            limit,
+            offset: limit * page - limit,   //25 * 10 - 25
         });
 
         return res.json(data);
-    };
+    }
 
     // Recupera um Customer
-    show(req, res) {
-        const id = parseInt(req.params.id, 10);
-        const customer = customers.find((item) => item.id === id);
-        const status = customer ? 200 : 404;
+    async show(req, res) {
+
+        const customer = await Customer.findByPk(req.params.id)
+
+        if(!customer) {
+            return res.status(404).json({error: "Resource not found"})
+        }
+
+        return  res.json(customer)
     }
 
     // Cria um novo Customer
-    create(req, res) {
-        const { name, site } = req.body;
-        const id = customers[customers.lenght - 1].id + 1;
-
-        const newCustomer = { id, name, site };
-        customer.push(newCustomer);
+    async create(req, res) {
+        // req.body
+        const customer = await Customer.create(req.body);
 
         return res.status(201).json(newCustomer);
     }
